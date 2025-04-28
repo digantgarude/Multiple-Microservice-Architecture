@@ -1,0 +1,31 @@
+package com.microservices.inventoryservice.controller;
+
+import com.microservices.inventoryservice.response.VenueInventoryResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import com.microservices.inventoryservice.response.EventInventoryResponse;
+import com.microservices.inventoryservice.service.InventoryService;
+
+@RestController
+@RequestMapping("/api/v1")
+public class InventoryController {
+    private InventoryService inventoryService;
+
+    @Autowired
+    public InventoryController(final InventoryService inventoryService) {
+        this.inventoryService = inventoryService;
+    }
+
+    @GetMapping("/inventory/events")
+    public @ResponseBody List<EventInventoryResponse> inventoryGetAllEvents() {
+        return inventoryService.getAllEvents();
+    }
+
+    @GetMapping("/inventory/venue/{venueId}")
+    public @ResponseBody VenueInventoryResponse inventoryByVenueId(@PathVariable("venueId") Long venueId) {
+        return  inventoryService.getVenueInformation(venueId);
+    }
+
+}
