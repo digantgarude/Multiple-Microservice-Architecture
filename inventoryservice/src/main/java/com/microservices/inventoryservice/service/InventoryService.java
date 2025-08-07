@@ -33,6 +33,17 @@ public class InventoryService {
                 .venue(event.getVenue())
                 .build()).collect(Collectors.toList());
     }
+    public EventInventoryResponse getEventInventory(final Long eventId){
+        final Event event = eventRepository.findById(eventId).orElse(null);
+
+        return EventInventoryResponse.builder()
+                .eventId(event.getId())
+                .event(event.getName())
+                .capacity(event.getLeft_capacity())
+                .venue(event.getVenue())
+                .ticketPrice(event.getTicketPrice())
+                .build();
+    }
 
     public VenueInventoryResponse getVenueInformation(final Long venueId){
         final Venue venue = venueRepository.findById(venueId).orElse(null);

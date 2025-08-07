@@ -23,6 +23,11 @@ public class InventoryController {
         return inventoryService.getAllEvents();
     }
 
+    @GetMapping("/inventory/event/{eventId}")
+    public @ResponseBody EventInventoryResponse inventoryForEvent(@PathVariable("eventId") Long eventId) {
+        return inventoryService.getEventInventory(eventId);
+    }
+
     @GetMapping("/inventory/venue/{venueId}")
     public @ResponseBody VenueInventoryResponse inventoryByVenueId(@PathVariable("venueId") Long venueId) {
         return  inventoryService.getVenueInformation(venueId);

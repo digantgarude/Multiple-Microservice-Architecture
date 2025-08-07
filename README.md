@@ -19,3 +19,6 @@ Tables:
 > 14:33 Min
 > 19:59 Min
 > 23:03 Min 
+> 40:23 Min 
+> 46:23 Min 
+> 53:14 Min
