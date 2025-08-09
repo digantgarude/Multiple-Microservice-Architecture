@@ -16,16 +16,16 @@ import java.math.BigDecimal;
 @Table(name = "event")
 public class Event {
     @Id
-    private  Long  Id;
+    private Long Id;
 
     @Column(name = "name")
     private String name;
 
     @Column(name = "total_capacity")
-    private  Long total_capacity;
+    private Long totalCapacity;
 
     @Column(name = "left_capacity")
-    private  Long left_capacity;
+    private Long leftCapacity;
 
     @ManyToOne
     @JoinColumn(name = "venue_id")

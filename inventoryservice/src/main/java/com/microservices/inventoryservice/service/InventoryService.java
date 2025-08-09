@@ -8,11 +8,13 @@ import com.microservices.inventoryservice.entity.Venue;
 import com.microservices.inventoryservice.repository.EventRepository;
 import com.microservices.inventoryservice.repository.VenueRepository;
 import com.microservices.inventoryservice.response.VenueInventoryResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.microservices.inventoryservice.response.EventInventoryResponse;
 
+@Slf4j
 @Service
 public class InventoryService {
 
@@ -29,7 +31,7 @@ public class InventoryService {
         final List<Event> events = eventRepository.findAll();
         return events.stream().map(event -> EventInventoryResponse.builder()
                 .event(event.getName())
-                .capacity(event.getLeft_capacity())
+                .capacity(event.getLeftCapacity())
                 .venue(event.getVenue())
                 .build()).collect(Collectors.toList());
     }
@@ -39,7 +41,7 @@ public class InventoryService {
         return EventInventoryResponse.builder()
                 .eventId(event.getId())
                 .event(event.getName())
-                .capacity(event.getLeft_capacity())
+                .capacity(event.getLeftCapacity())
                 .venue(event.getVenue())
                 .ticketPrice(event.getTicketPrice())
                 .build();
@@ -54,6 +56,15 @@ public class InventoryService {
                 .venueName(venue.getName())
                 .totalCapacity(venue.getTotal_capacity())
                 .build();
+    }
+
+    public void updateEventCapacity(final Long eventId, final Long ticketsBooked){
+        final Event event = eventRepository.findById(eventId).orElse(null);
+        log.info("Found event : id:  {} ticketsBooked : {}", eventId, ticketsBooked);
+
+        event.setLeftCapacity(event.getLeftCapacity() - ticketsBooked);
+        eventRepository.saveAndFlush(event);
+        log.info("Updated event capacity for event id:  {} with tickets booked : {}", eventId, ticketsBooked);
     }
 
 }
