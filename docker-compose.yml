@@ -1,0 +1,249 @@
+version: "3.9"
+
+services:
+  # MySQL database for ticketing
+  mysql:
+    image: mysql:8.3.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ticketing
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/mysql
+      - db-data:/var/log/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 3000
+    restart: always
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kafka broker
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-broker
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: always
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kafka UI
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8084:8080"
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_NAME: local
+      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: kafka-broker:29092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    restart: always
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8080"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kafka Schema Registry
+  kafka-schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    container_name: kafka-schema-registry
+    hostname: kafka-schema-registry
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+    ports:
+      - "8083:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: kafka-schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka-broker:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://kafka-schema-registry:8081
+    restart: always
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8081"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Keycloak DB
+  keycloak_db:
+    image: mysql:8.3.0
+    container_name: keycloak-mysql
+    volumes:
+      - ./volume-data/mysql_keycloak_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: password
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.2
+    container_name: keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: keycloak-mysql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    ports:
+      - "8091:8080"
+    volumes:
+      - ./docker/keycloak/realms/:/opt/keycloak/data/import
+    depends_on:
+      keycloak_db:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: >
+        CMD-SHELL
+        { printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&0; 
+        grep 'HTTP/1.1 200'; } 0<>/dev/tcp/localhost/9000
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # Inventory Service
+  inventoryservice:
+    build: ./inventoryservice
+    container_name: inventoryservice
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./config/.env.common
+      - ./config/.env.inventoryservice
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Booking Service
+  bookingservice:
+    build: ./bookingservice
+    container_name: bookingservice
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./config/.env.common
+      - ./config/.env.bookingservice
+    restart: always
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Order Service
+  orderservice:
+    build: ./orderservice
+    container_name: orderservice
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./config/.env.common
+      - ./config/.env.orderservice
+    restart: always
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      inventoryservice:
+        condition: service_healthy
+      bookingservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 50s
+
+  # API Gateway
+  apigateway:
+    build: ./apigateway
+    container_name: apigateway
+    ports:
+      - "8090:8090"
+    env_file:
+      - ./config/.env.common
+      - ./config/.env.apigateway
+    restart: always
+    depends_on:
+      inventoryservice:
+        condition: service_healthy
+      bookingservice:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  db-data:
