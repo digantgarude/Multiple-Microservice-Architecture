@@ -2,6 +2,20 @@
 
 A microservices-based event booking system that handles event inventory, bookings, and order processing.
 
+![Multiple Microservices Architecture](/multiple-microservices-arch.png)
+
+## Technology Stack
+
+- Spring Boot
+- Spring Cloud Gateway
+- Spring Security with OAuth2
+- Kafka for async communication
+- MySQL for data persistence
+- Keycloak for authentication
+- Docker to setup services using docker-compose
+- OpenAPI (Swagger) for documentation
+- Flyway for DB migration.
+
 ## Services Overview
 
 ### API Gateway Service (Port: 8090)
@@ -36,18 +50,6 @@ A microservices-based event booking system that handles event inventory, booking
 - Updates inventory after order confirmation
 - Maintains order records
 
-## Technology Stack
-
-- Spring Boot
-- Spring Cloud Gateway
-- Spring Security with OAuth2
-- Kafka for async communication
-- MySQL for data persistence
-- Keycloak for authentication
-- Docker to setup services using docker-compose
-- OpenAPI (Swagger) for documentation
-- Flyway for DB migration.
-
 ## Service Communication
 
 ```plaintext
@@ -55,8 +57,10 @@ Client -> API Gateway -> Microservices
 
 Booking Flow:
 1. Client -> API Gateway -> Booking Service
-2. Booking Service -> Inventory Service (check availability)
+2. Booking Service -> Inventory Service (check availability for capacity)
 3. Booking Service -> Kafka (publish booking event)
 4. Order Service <- Kafka (consume booking event)
 5. Order Service -> Inventory Service (update capacity)
 ```
+
+[Database Schema](./DB_schema.md)
