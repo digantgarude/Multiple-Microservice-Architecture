@@ -1,6 +1,8 @@
 package com.microservices.inventoryservice.controller;
 
 import com.microservices.inventoryservice.response.VenueInventoryResponse;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,23 +22,37 @@ public class InventoryController {
     }
 
     @GetMapping("/inventory/events")
+    @Tool(name = "inventoryGetAllEvents", description = "Get a list of all the events.")
     public @ResponseBody List<EventInventoryResponse> inventoryGetAllEvents() {
         return inventoryService.getAllEvents();
     }
 
     @GetMapping("/inventory/event/{eventId}")
-    public @ResponseBody EventInventoryResponse inventoryForEvent(@PathVariable("eventId") Long eventId) {
+    @Tool(name = "inventoryForEvent", description = "Get the inventory details when the id of an event is passed.")
+    public @ResponseBody EventInventoryResponse inventoryForEvent(@ToolParam(description = "The event identifier") @PathVariable("eventId") Long eventId) {
         return inventoryService.getEventInventory(eventId);
     }
 
     @GetMapping("/inventory/venue/{venueId}")
-    public @ResponseBody VenueInventoryResponse inventoryByVenueId(@PathVariable("venueId") Long venueId) {
+    @Tool(name = "inventoryByVenueId", description = "Get the inventory details when the id of a venue is passed.")
+    public @ResponseBody VenueInventoryResponse inventoryByVenueId(@ToolParam(description = "The venue identifier") @PathVariable("venueId") Long venueId) {
         return  inventoryService.getVenueInformation(venueId);
     }
 
-    @PutMapping("/inventory/event/{eventId}/capacity/{capacity}")
+    /*
+    @PutMapping("/inventory/event/{eventId}/tickets-booked/{ticketsBooked}")
+    @Tool(name = "updateEventCapacity", description = "Update the event capacity for an event when the id of a event is passed and the number of tickets booked is passed.")
+    public ResponseEntity<Void> updateEventCapacity(@ToolParam(description = "The event identifier")  @PathVariable("eventId") Long eventId,
+                                                    @ToolParam(description = "The number of tickets booked")  @PathVariable("ticketsBooked") Long ticketsBooked){
+        inventoryService.updateEventCapacity(eventId, ticketsBooked);
+        return ResponseEntity.ok().build();
+
+    }
+     */
+
+    @PutMapping("/inventory/event/{eventId}/tickets-booked/{ticketsBooked}")
     public ResponseEntity<Void> updateEventCapacity(@PathVariable("eventId") Long eventId,
-                                                    @PathVariable("capacity") Long ticketsBooked){
+                                                    @PathVariable("ticketsBooked") Long ticketsBooked){
         inventoryService.updateEventCapacity(eventId, ticketsBooked);
         return ResponseEntity.ok().build();
 
