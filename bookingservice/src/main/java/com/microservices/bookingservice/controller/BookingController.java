@@ -3,6 +3,8 @@ package com.microservices.bookingservice.controller;
 import com.microservices.bookingservice.request.BookingRequest;
 import com.microservices.bookingservice.response.BookingResponse;
 import com.microservices.bookingservice.service.BookingService;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +22,8 @@ public class BookingController {
     }
 
     @PostMapping(value = "/booking", consumes = "application/json", produces = "application/json")
-    public BookingResponse createBooking(@RequestBody BookingRequest request) {
+    @Tool(name = "createBooking", description = "Create a booking for an event when an object containing userId, eventId, ticketCount is passed.")
+    public BookingResponse createBooking(@ToolParam(description = "The request json object containing userId, eventId and ticketCount values.") @RequestBody BookingRequest request) {
         System.out.println("Received Booking: " + request.toString());
         return bookingService.createBooking(request);
     }
