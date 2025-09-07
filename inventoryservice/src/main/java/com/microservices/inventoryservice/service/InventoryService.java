@@ -30,11 +30,13 @@ public class InventoryService {
     public List<EventInventoryResponse> getAllEvents() {
         final List<Event> events = eventRepository.findAll();
         return events.stream().map(event -> EventInventoryResponse.builder()
+                .eventId(event.getId())
                 .event(event.getName())
                 .capacity(event.getLeftCapacity())
                 .venue(event.getVenue())
                 .build()).collect(Collectors.toList());
     }
+
     public EventInventoryResponse getEventInventory(final Long eventId){
         final Event event = eventRepository.findById(eventId).orElse(null);
 

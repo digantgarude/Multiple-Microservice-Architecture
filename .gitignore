@@ -29,3 +29,6 @@ replay_pid*
 .vscode/settings.json
 .gitignore
 .DS_Store
+
+.openmcp
+inventoryservice/mcp
