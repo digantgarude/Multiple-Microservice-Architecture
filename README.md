@@ -1,8 +1,9 @@
-# Multiple Microservice Architecture
+# MCP based Multi - Microservice Event Booking System
 
 A microservices-based event booking system that handles event inventory, bookings, and order processing.
+This project allows event booking through both a traditional api approach as well as newer MCP (Model Context Protocol) based approaches.
 
-![Multiple Microservices Architecture](/multiple-microservices-arch.png)
+![Multiple Microservices Architecture](/images/multiple-microservices-arch.png)
 
 ## Technology Stack
 
@@ -32,17 +33,26 @@ A microservices-based event booking system that handles event inventory, booking
 - Validates inventory availability
 - Communicates with Inventory Service to check capacity
 - Produces booking events to Kafka
-- APIs:
+- Traditional APIs:
   - POST `/api/v1/booking` - Create new booking
+- MCP endpoint `/sse`
+  Available Tools:
+  - `createBooking` - Create new booking
 
 ### Inventory Service (Port: 8080)
 - Manages event and venue information
 - Handles capacity management
-- APIs:
+- Traditional APIs:
   - GET `/api/v1/inventory/events` - List all events
   - GET `/api/v1/inventory/event/{eventId}` - Get event details
   - GET `/api/v1/inventory/venue/{venueId}` - Get venue details
   - PUT `/api/v1/inventory/event/{eventId}/capacity/{capacity}` - Update event capacity
+- MCP endpoint `/sse`
+  Available Tools:
+  - `inventoryGetAllEvents` - List all events
+  - `inventoryByVenueId` - Get venue details
+  - `inventoryForEvent` - Get event details
+
 
 ### Order Service (Port: 8082)
 - Processes confirmed bookings
@@ -63,4 +73,12 @@ Booking Flow:
 5. Order Service -> Inventory Service (update capacity)
 ```
 
-[Database Schema](./DB_schema.md)
+[More Info: Database Schema](./DB_schema.md)
+
+## MCP Service Example using Cline VS Code extenstion.
+
+1. Get details for all the events.
+![Get all events](/images/mcp-get-all-events.png)
+
+2. Create a booking for a particular event.
+![Create Booking](/images/mcp-create-booking.png)
